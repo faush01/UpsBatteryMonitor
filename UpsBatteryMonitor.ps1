@@ -7,17 +7,19 @@ $date_format = "[yyyy-MM-dd HH:mm:ss]"
 $ds = (Get-Date).ToString($date_format)
 (Get-Date).ToString($date_format) + " - Battery Monitor Started" >> $log_path
 
-$bs = (Get-WmiObject -class win32_battery -property BatteryStatus | select-object BatteryStatus).BatteryStatus
-$ecr = (Get-WmiObject -class win32_battery -property EstimatedChargeRemaining | select-object EstimatedChargeRemaining).EstimatedChargeRemaining
+$bat_info = Get-WmiObject -class win32_battery
+$bs = (($bat_info | Select BatteryStatus).BatteryStatus | Measure -Minimum).Minimum
+$ecr = (($bat_info | Select EstimatedChargeRemaining).EstimatedChargeRemaining | Measure -Average).Average
 "$ds - Status:$bs Cap:$ecr%" >> $log_path
 
 While ($true) {
 
-	$bs = (Get-WmiObject -class win32_battery -property BatteryStatus | select-object BatteryStatus).BatteryStatus
+	$bat_info = Get-WmiObject -class win32_battery
+	$bs = (($bat_info | Select BatteryStatus).BatteryStatus | Measure -Minimum).Minimum
 	
 	if($bs -eq 1) {
 		$ds = (Get-Date).ToString($date_format)
-		$ecr = (Get-WmiObject -class win32_battery -property EstimatedChargeRemaining | select-object EstimatedChargeRemaining).EstimatedChargeRemaining
+		$ecr = (($bat_info | Select EstimatedChargeRemaining).EstimatedChargeRemaining | Measure -Average).Average
 		"$ds - Status:$bs Cap:$ecr%" >> $log_path
 		if($ecr -lt 80) {
 			"$ds - BAT LOW!! Shutting Down" >> $log_path
